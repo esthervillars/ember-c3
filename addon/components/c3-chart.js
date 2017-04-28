@@ -1,22 +1,22 @@
-import Component from 'ember-component';
-import get from 'ember-metal/get';
-import set from 'ember-metal/set';
-import { getProperties } from 'ember-metal/get';
-import { debounce, later, scheduleOnce } from 'ember-runloop';
+import Ember from 'ember';
 
 var c3 = window.c3;
 
-export default Component.extend({
+export default Ember.Component.extend({
   tagName: 'div',
   classNames: ['c3-chart-component'],
+  
+  init() {
+    this._super(...arguments);
+  },
 
   // triggered when data is updated by didUpdateAttrs
   _reload() {
-    const chart = get(this, 'c3chart');
+    const chart = this.get('c3chart');
 
     // if data should not be appended
     // e.g. when using a pie or donut chart
-    if ( get(this, 'unloadDataBeforeChange') ) {
+    if ( this.get('unloadDataBeforeChange') ) {
       chart.unload();
       // default animation is 350ms
       // t/f data must by loaded after unload animation (400)
@@ -24,16 +24,16 @@ export default Component.extend({
       later(this, function() {
         chart.load(
           // data, axis, color are only mutable elements
-          get(this, 'data'),
-          get(this, 'axis'),
-          get(this, 'color')
+          this.get('data'),
+          this.get('axis'),
+          this.get('color')
         );
       }, 400);
     } else {
       chart.load(
-        get(this, 'data'),
-        get(this, 'axis'),
-        get(this, 'color')
+        this.get('data'),
+        this.get('axis'),
+        this.get('color')
       );
     }
   },
@@ -41,13 +41,14 @@ export default Component.extend({
   // triggered when component added by didInsertElement
   _setupc3() {
     // get all base c3 properties
-    const chartConfig = getProperties(this,
+    console.log(this);
+    const chartConfig = this.getProperties(
       ['data','axis','regions','bar','pie','donut','gauge',
       'grid','legend','tooltip','subchart','zoom','point',
       'line','area','size','padding','color','transition']);
 
     // bind c3 chart to component's DOM element
-    chartConfig.bindto = get(this, 'element');
+    chartConfig.bindto = this.get('element');
 
     // emit events to controller
     callbacks.call(this);
@@ -69,7 +70,7 @@ export default Component.extend({
     }
 
     // render the initial chart
-    set(this, 'c3chart', c3.generate(chartConfig));
+    this.set('c3chart', c3.generate(chartConfig));
   },
 
   /***
@@ -82,7 +83,7 @@ export default Component.extend({
     // t/f use 'afterRender' property to ensure
     // state readiness
     try {
-      scheduleOnce('afterRender', this, this._setupc3);
+      Ember.run.scheduleOnce('afterRender', this, this._setupc3);
     } catch(err) {
       console.log(err);
     }
@@ -92,12 +93,12 @@ export default Component.extend({
     // if data proprety is dependent on async relationships,
     // animations can cause buggy renders, therefore debounce
     // component update to ensure proper visualization
-    debounce(this, this._reload, 360);
+    Ember.run.debounce(this, this._reload, 360);
   },
 
   willDestroyElement() {
     // execute teardown method
     this._super();
-    get(this, 'c3chart').destroy();
+    this.get('c3chart').destroy();
   }
 });
